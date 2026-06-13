@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const countDisplay = document.getElementById('count');
     const filterBtns = document.querySelectorAll('.filter-btn');
 
-    // 1. Fetch Dynamic Projects from projects.json
+    // Fetch Dynamic Projects from projects.json
     fetch('projects.json')
         .then(response => {
             if (!response.ok) {
@@ -12,49 +12,54 @@ document.addEventListener('DOMContentLoaded', function() {
             return response.json();
         })
         .then(projects => {
-            if (projects.length === 0) return;
+            if (!projects || projects.length === 0) {
+                initializeFiltering();
+                return;
+            }
             
-            // Clear out hardcoded template items to make room for your live GitHub repos
+            // Clear out static items to make room for live GitHub repos
             projectGrid.innerHTML = '';
 
             // Generate structural cards from your automation data
             projects.forEach(project => {
-                // Determine a clean category class based on language
-                let category = 'code';
-                if (project.language.toLowerCase() === 'html' || project.language.toLowerCase() === 'css') {
+                // Safely check language fallback values
+                const lang = project.language ? project.language.toLowerCase() : 'code';
+                
+                // Group them cleanly into your existing CSS filter categories (design, web, code)
+                let category = 'code'; 
+                if (lang === 'html' || lang === 'css' || lang === 'javascript') {
                     category = 'web';
+                } else if (lang === 'figma' || lang === 'design') {
+                    category = 'design';
                 }
 
                 const cardHTML = `
                     <a href="${project.html_url}" target="_blank" class="project-card" data-category="${category}">
                         <div class="project-image" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);"></div>
                         <h3>${project.name}</h3>
-                        <p class="category-tag">${project.language}</p>
+                        <p class="category-tag">${project.language || 'Code'}</p>
                         <p>${project.description}</p>
                     </a>
                 `;
                 projectGrid.insertAdjacentHTML('beforeend', cardHTML);
             });
 
-            // Re-initialize the setup and filtering logic once elements are rendered
+            // Re-initialize filtering logic once elements are fully rendered
             initializeFiltering();
         })
         .catch(error => {
-            console.warn('Using existing static HTML layout because:', error.message);
-            // Fallback to filtering hardcoded items if json load fails
+            console.warn('Using existing layout or structural fallback:', error.message);
             initializeFiltering();
         });
 
-    // 2. Wrap your original filtering code into a reusable execution block
     function initializeFiltering() {
         const projectCards = document.querySelectorAll('.project-card');
-        countDisplay.textContent = projectCards.length;
+        if(countDisplay) countDisplay.textContent = projectCards.length;
 
         filterBtns.forEach(btn => {
             btn.addEventListener('click', function() {
                 const filter = this.getAttribute('data-filter');
 
-                // Update active navigation button visual state
                 filterBtns.forEach(b => b.classList.remove('active'));
                 this.classList.add('active');
 
@@ -63,7 +68,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 projectCards.forEach(card => {
                     const category = card.getAttribute('data-category');
                     
-                    // Unified fade & toggle execution layout
                     card.style.opacity = '0';
                     card.style.transform = 'scale(0.95)';
 
@@ -85,7 +89,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
 
                 setTimeout(() => {
-                    countDisplay.textContent = visibleCount;
+                    if(countDisplay) countDisplay.textContent = visibleCount;
                 }, 300);
             });
         });
